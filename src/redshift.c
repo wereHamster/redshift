@@ -1167,8 +1167,7 @@ main(int argc, char *argv[])
 			double now;
 			r = systemtime_get_time(&now);
 			if (r < 0) {
-				fputs(_("Unable to read system time.\n"),
-				      stderr);
+				fputs(_("Unable to read system time.\n"), stderr);
 				method->free(&state);
 				exit(EXIT_FAILURE);
 			}
@@ -1204,16 +1203,13 @@ main(int argc, char *argv[])
 				}
 
 				/* Calculate alpha */
-				adjustment_alpha = (end - start) /
-					(float)short_trans_len;
+				adjustment_alpha = (end - start) / (float)short_trans_len;
 				if (!short_trans_begin) {
-					adjustment_alpha =
-						1.0 - adjustment_alpha;
+					adjustment_alpha = 1.0 - adjustment_alpha;
 				}
 
 				/* Clamp alpha value */
-				adjustment_alpha =
-					MAX(0.0, MIN(adjustment_alpha, 1.0));
+				adjustment_alpha = MAX(0.0, MIN(adjustment_alpha, 1.0));
 			}
 
 			/* Handle end of transition */
@@ -1227,8 +1223,7 @@ main(int argc, char *argv[])
 
 			/* Interpolate between 6500K and calculated
 			   temperature */
-			temp = adjustment_alpha*6500 +
-				(1.0-adjustment_alpha)*temp;
+			temp = adjustment_alpha * 6500 + (1.0 - adjustment_alpha) * temp;
 
 			/* Quit loop when done */
 			if (done && !short_trans) break;
@@ -1239,12 +1234,9 @@ main(int argc, char *argv[])
 
 			/* Adjust temperature */
 			if (!disabled || short_trans) {
-				r = method->set_temperature(&state,
-							    temp, brightness,
-							    gamma);
+				r = method->set_temperature(&state, temp, brightness, gamma);
 				if (r < 0) {
-					fputs(_("Temperature adjustment"
-						" failed.\n"), stderr);
+					fputs(_("Temperature adjustment failed.\n"), stderr);
 					method->free(&state);
 					exit(EXIT_FAILURE);
 				}
