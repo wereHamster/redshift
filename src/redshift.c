@@ -595,6 +595,74 @@ find_location_provider(const char *name)
 	return provider;
 }
 
+static double
+warn_transition_function(double x, double period)
+{
+    /* Linear interpolation between 0 and 1 and back to 0. */
+
+    double m = 1.0 / (period / 2.0);
+    if (x < period / 2.0) {
+        return x * m;
+    } else {
+        return 2.0 - x * m;
+    }
+}
+
+#include <dirent.h>
+
+static int
+parse_capacity_file(char *battery)
+{
+    char filename[200];
+    sprintf(filename, "/sys/class/power_supply/%s/capacity", battery);
+
+    FILE *fd;
+    char buf[11] = { 0 };
+    int ret = -1;
+
+    fd = fopen(filename, "r");
+    if (!fd)
+        return -1;
+
+    fgets(buf, 10, fd);
+    ret = atoi(buf);
+    fclose(fd);
+
+    return ret;
+}
+
+static int
+battery_low()
+{
+    int capacity = -1;
+
+    DIR *dir = opendir("/sys/class/power_supply");
+    while (1) {
+        struct dirent *d = readdir(dir);
+        if (d == NULL) {
+            break;
+        } else {
+            if (strncmp(d->d_name, "BAT", 3) == 0) {
+                int cap = parse_capacity_file(d->d_name);
+                if (cap >= 0) {
+                    if (capacity == -1) {
+                        capacity = cap;
+                    } else {
+                        capacity += cap;
+                    }
+                }
+            }
+        }
+    }
+
+    /* If all batteries have <3% capacity left, then the battery is low. */
+    if (capacity == -1) {
+        return 0;
+    } else {
+        return capacity < 3;
+    }
+}
+
 
 int
 main(int argc, char *argv[])
@@ -1227,6 +1295,16 @@ main(int argc, char *argv[])
 
 			/* Quit loop when done */
 			if (done && !short_trans) break;
+
+            /* Battery low, pulse color between calculated temp and warning
+               temp. */
+            if (battery_low()) {
+                int warn_temp = temp - 1000;
+                double period = 1.0;
+                double alpha = warn_transition_function(fmodl(now, period), period);
+                temp = alpha * warn_temp + (1.0 - alpha) * temp;
+                short_trans = 1;
+            }
 
 			if (verbose) {
 				printf(_("Color temperature: %uK\n"), temp);
