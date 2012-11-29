@@ -637,6 +637,10 @@ battery_low()
     int capacity = -1;
 
     DIR *dir = opendir("/sys/class/power_supply");
+    if (dir == NULL) {
+        return 0;
+    }
+
     while (1) {
         struct dirent *d = readdir(dir);
         if (d == NULL) {
